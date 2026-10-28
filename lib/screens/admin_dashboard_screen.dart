@@ -14,6 +14,7 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _pendingCount = 0;
+  int _revalidationCount = 0;
   int _disputesCount = 0;
   int _activeUsers = 0;
   int _itemsClaimed = 0;
@@ -28,22 +29,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Future<void> _fetchAdminData() async {
     try {
       // Fetch users count
-      final profiles = await Supabase.instance.client.from('profiles').select('id');
+      final profiles = await Supabase.instance.client.from('profiles').select('id,role,account_status');
       
       // Fetch reports
-      final reports = await Supabase.instance.client.from('reports').select('status');
+      final reports = await Supabase.instance.client.from('reports').select('id,status,revalidation_count');
+      final pendingClaims = await Supabase.instance.client
+          .from('claims')
+          .select('report_id')
+          .eq('status', 'pending');
+      final claimReportIds = pendingClaims.map((claim) => claim['report_id'].toString()).toSet();
       
       int pending = 0;
+      int revalidations = 0;
       int claimed = 0;
       for (var r in reports) {
-        if (r['status'] == 'pending_review') pending++;
+        if (r['status'] == 'pending_review' && !claimReportIds.contains(r['id']?.toString())) {
+          pending++;
+          if ((r['revalidation_count'] as num? ?? 0) > 0) revalidations++;
+        }
         if (r['status'] == 'claimed') claimed++;
       }
 
       if (mounted) {
         setState(() {
-          _activeUsers = profiles.length;
+          _activeUsers = profiles.where((user) => user['account_status'] == 'approved' || user['role'] == 'admin').length;
           _pendingCount = pending;
+          _revalidationCount = revalidations;
           _itemsClaimed = claimed;
           _disputesCount = 0; // Placeholder for now until disputes table exists
           _isLoading = false;
@@ -82,6 +93,8 @@ appBar: AppBar(title: const Text('Admin Dashboard'), automaticallyImplyLeading: 
               Expanded(child: _buildAdminStatCard('Items Claimed', '$_itemsClaimed', Colors.white)),
             ],
           ),
+          const SizedBox(height: 16),
+          _buildAdminStatCard('Revalidations Awaiting Review', '$_revalidationCount', const Color(0xFFA99BFF)),
           const SizedBox(height: 32),
           const Text('Management Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),

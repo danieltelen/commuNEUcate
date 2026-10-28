@@ -41,16 +41,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
         // Verify answer against database
         setState(() => _isLoading = true);
         try {
-          final expected = (widget.item['expected_answer'] ?? '').toString().toLowerCase().trim();
-          final given = _securityAnswerController.text.toLowerCase().trim();
-          
-          if (expected.isNotEmpty && given != expected) {
-            // Note: User requested that incorrect answers STILL proceed.
-            // We just let it pass so the Admin can manually review their incorrect answer later.
-            showTopToast(context, 'Answer submitted for admin review.');
-          } else {
-            showTopToast(context, 'Answer verified! ✓');
-          }
+          showTopToast(context, 'Answer submitted for admin review.');
         } finally {
           if (mounted) setState(() => _isLoading = false);
         }
@@ -67,13 +58,13 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
         final authUser = Supabase.instance.client.auth.currentUser;
         if (authUser == null) throw Exception('Not logged in');
 
-        // 1. Upload proof image to 'item_images' bucket (reusing existing bucket)
+        // 1. Upload proof image to the private claims bucket.
         final fileExt = _proofImage!.path.split('.').last;
         final fileName = 'proof_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
         final filePath = '${authUser.id}/$fileName';
         
-        await Supabase.instance.client.storage.from('item_images').upload(filePath, _proofImage!);
-        final proofImageUrl = Supabase.instance.client.storage.from('item_images').getPublicUrl(filePath);
+        await Supabase.instance.client.storage.from('claim_proofs').upload(filePath, _proofImage!);
+        final proofImageUrl = filePath;
 
         // 2. Insert into claims table
         await Supabase.instance.client.from('claims').insert({

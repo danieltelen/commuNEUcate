@@ -75,16 +75,21 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
   Future<void> _approveItem(Map<String, dynamic> item) async {
     final reportId = item['id'];
     final activeClaim = item['_activeClaim'];
+    final review = {
+      'review_note': null,
+      'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+      'reviewed_by': Supabase.instance.client.auth.currentUser?.id,
+    };
 
     final index = _pendingItems.indexWhere((i) => i['id'] == reportId);
     if (index != -1) setState(() => _pendingItems.removeAt(index));
 
     try {
       if (activeClaim != null) {
-        await Supabase.instance.client.from('reports').update({'status': 'claimed'}).eq('id', reportId).select().single();
+        await Supabase.instance.client.from('reports').update({'status': 'claimed', ...review}).eq('id', reportId).select().single();
         await Supabase.instance.client.from('claims').update({'status': 'approved'}).eq('id', activeClaim['id']).select().single();
       } else {
-        await Supabase.instance.client.from('reports').update({'status': 'unclaimed'}).eq('id', reportId).select().single();
+        await Supabase.instance.client.from('reports').update({'status': 'unclaimed', ...review}).eq('id', reportId).select().single();
       }
 
       if (mounted) showTopToast(context, 'Approved successfully!');
@@ -98,6 +103,34 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
     final reportId = item['id'];
     final activeClaim = item['_activeClaim'];
 
+    String? reviewNote;
+    if (activeClaim == null) {
+      final controller = TextEditingController();
+      reviewNote = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: const Color(0xFF111120),
+          title: const Text('Reject report'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: 3,
+            decoration: const InputDecoration(hintText: 'Explain what the reporter should correct'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Reject', style: TextStyle(color: Colors.redAccent))),
+          ],
+        ),
+      );
+      controller.dispose();
+      if (reviewNote == null) return;
+      if (reviewNote.isEmpty) {
+        showTopToast(context, 'Add a reason so the reporter can correct the item.');
+        return;
+      }
+    }
+
     final index = _pendingItems.indexWhere((i) => i['id'] == reportId);
     if (index != -1) setState(() => _pendingItems.removeAt(index));
 
@@ -106,7 +139,12 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
         await Supabase.instance.client.from('reports').update({'status': 'unclaimed'}).eq('id', reportId).select().single();
         await Supabase.instance.client.from('claims').update({'status': 'rejected'}).eq('id', activeClaim['id']).select().single();
       } else {
-        await Supabase.instance.client.from('reports').update({'status': 'rejected'}).eq('id', reportId).select().single();
+        await Supabase.instance.client.from('reports').update({
+          'status': 'rejected',
+          'review_note': reviewNote,
+          'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+          'reviewed_by': Supabase.instance.client.auth.currentUser?.id,
+        }).eq('id', reportId).select().single();
       }
 
       if (mounted) showTopToast(context, 'Rejected.');
@@ -116,7 +154,18 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
     }
   }
 
-  void _showProofDialog(String imageUrl, String securityAnswer) {
+  Future<void> _showProofDialog(String proofPath, String securityAnswer) async {
+    var imageUrl = proofPath;
+    if (!proofPath.startsWith('http://') && !proofPath.startsWith('https://')) {
+      try {
+        imageUrl = await Supabase.instance.client.storage
+            .from('claim_proofs')
+            .createSignedUrl(proofPath, 600);
+      } catch (e) {
+        if (mounted) showTopToast(context, 'Could not open claim proof: $e');
+        return;
+      }
+    }
     showDialog(
       context: context,
       builder: (context) => Dialog(

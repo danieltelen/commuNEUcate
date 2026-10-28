@@ -1,0 +1,88 @@
+name: Web Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web-version/**'
+      - '.github/workflows/vercel-deploy.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'web-version/**'
+      - '.github/workflows/vercel-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-version
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check JavaScript syntax
+        run: |
+          node --input-type=module --check < app.js
+          node --input-type=module --check < admin/admin.js
+          node --input-type=module --check < backend.js
+
+      - name: Check required web entry points
+        run: |
+          test -s index.html
+          test -s admin/index.html
+          test -s vercel.json
+
+  deploy:
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-version
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Confirm Vercel credentials are configured
+        run: |
+          test -n "$VERCEL_TOKEN" || { echo 'Missing GitHub secret VERCEL_TOKEN.' >&2; exit 1; }
+          test -n "$VERCEL_ORG_ID" || { echo 'Missing GitHub secret VERCEL_ORG_ID.' >&2; exit 1; }
+          test -n "$VERCEL_PROJECT_ID" || { echo 'Missing GitHub secret VERCEL_PROJECT_ID.' >&2; exit 1; }
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull production project settings
+        run: vercel pull --yes --environment=production
+
+      - name: Build production output
+        run: vercel build --prod
+
+      - name: Deploy production output
+        run: vercel deploy --prebuilt --prod

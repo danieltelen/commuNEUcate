@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'login_screen.dart';
+import 'edit_report_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,6 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _itemsReported = 0;
   int _itemsClaimed = 0;
   List<dynamic> _myClaims = [];
+  List<dynamic> _myReports = [];
   bool _isLoading = true;
 
   @override
@@ -56,7 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         final reports = await Supabase.instance.client
             .from('reports')
-            .select('status')
+            .select('*')
             .eq('reporter_id', user.id);
 
         final claims = await Supabase.instance.client
@@ -70,6 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           setState(() {
             _myClaims = claims;
+            _myReports = reports;
             _itemsReported = reported;
             _itemsClaimed = claimed;
             _isLoading = false;
@@ -180,6 +183,37 @@ appBar: AppBar(title: const Text('Profile')),
               ],
             ),
           ),
+          if (_myReports.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Text('My Reports', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ..._myReports.map((report) {
+              final rejected = report['status'] == 'rejected';
+              final status = (report['status'] ?? 'pending_review').toString().replaceAll('_', ' ');
+              final note = (report['review_note'] ?? '').toString().trim();
+              return Card(
+                color: const Color(0xFF111120),
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: Icon(rejected ? Icons.error_outline : Icons.inventory_2_outlined,
+                    color: rejected ? Colors.orangeAccent : const Color(0xFF7C6AFF)),
+                  title: Text(report['item_name'] ?? 'Found item', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(rejected && note.isNotEmpty ? 'Rejected: $note' : 'Status: $status'),
+                  trailing: rejected
+                      ? TextButton(
+                          onPressed: () async {
+                            final updated = await Navigator.push<bool>(context, MaterialPageRoute(
+                              builder: (_) => EditReportScreen(item: Map<String, dynamic>.from(report)),
+                            ));
+                            if (updated == true) _fetchProfileData();
+                          },
+                          child: const Text('Update & Resubmit', style: TextStyle(color: Color(0xFF0FE0B0))),
+                        )
+                      : null,
+                ),
+              );
+            }),
+          ],
           if (_myClaims.isNotEmpty) ...[
             const SizedBox(height: 24),
             const Text(

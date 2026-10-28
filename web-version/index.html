@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07070e" />
+    <meta name="description" content="Search New Era University lost and found items." />
+    <title>CommNEUcate — Lost & Found</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./public.css" />
+    <link rel="stylesheet" href="./auth.css" />
+    <link rel="stylesheet" href="./enhancements.css" />
+  </head>
+  <body class="public-body">
+    <header class="public-header">
+      <a class="public-brand" href="/" aria-label="CommNEUcate home"><span class="rail-logo">C</span><span>CommNEUcate</span></a>
+      <nav class="public-nav" aria-label="Main navigation">
+        <button class="public-nav-link active" data-page="browse">Browse Items</button>
+        <button class="public-nav-link" data-page="report">Report an Item</button>
+        <button class="public-nav-link auth-required" data-page="my-reports">My Reports</button>
+      </nav>
+      <div class="public-actions">
+        <a class="apk-download header-apk" href="https://github.com/danieltelen/commuNEUcate/releases/latest/download/app-release.apk" target="_blank" rel="noopener noreferrer"><span>↓</span> Download APK</a>
+        <button class="public-signin" id="auth-open">Sign in</button>
+        <span class="public-account hidden" id="public-account"></span>
+      </div>
+    </header>
+
+    <main class="public-main">
+      <section id="page-root"></section>
+    </main>
+
+    <footer class="public-footer"><a href="/admin/">Admin portal</a><span>CommNEUcate · New Era University Lost &amp; Found</span><a href="https://github.com/danieltelen/commuNEUcate/releases/latest/download/app-release.apk">Download Android APK</a></footer>
+
+    <dialog id="item-dialog" class="item-dialog" aria-labelledby="item-dialog-title">
+      <form method="dialog" class="dialog-close"><button aria-label="Close item details">&#215;</button></form>
+      <div id="item-dialog-content"></div>
+    </dialog>
+
+    <dialog id="claim-dialog" class="claim-dialog" aria-labelledby="claim-dialog-title">
+      <form method="dialog" class="dialog-close"><button aria-label="Close claim form">&#215;</button></form>
+      <div class="claim-dialog-content">
+        <span class="section-kicker">OWNER VERIFICATION</span>
+        <h2 id="claim-dialog-title">Claim this item</h2>
+        <p class="claim-intro">Answer the reporter's question and upload proof of ownership. An administrator will review your request.</p>
+        <form id="claim-form" class="claim-form">
+          <input type="hidden" name="report_id" />
+          <label class="field">ANSWER TO THE SECURITY QUESTION<input name="security_answer" required maxlength="500" autocomplete="off" placeholder="Enter your answer" /></label>
+          <label class="field">PROOF OF OWNERSHIP<input name="proof" type="file" accept="image/*" required /><small>Upload a photo, receipt, or other evidence. This file is private to the review process.</small></label>
+          <p id="claim-message" class="message" role="status" aria-live="polite"></p>
+          <div class="claim-actions"><button type="button" class="secondary-button" id="claim-cancel">Cancel</button><button id="claim-submit" class="primary-button" type="submit">Submit claim</button></div>
+        </form>
+      </div>
+    </dialog>
+
+    <dialog id="auth-dialog" class="auth-dialog">
+      <form method="dialog" class="auth-close"><button aria-label="Close">×</button></form>
+      <div class="auth-content">
+        <span class="auth-kicker">NEU COMMUNITY</span>
+        <h2 id="auth-title">Welcome back</h2>
+        <p id="auth-description">Sign in to report items and follow your submissions.</p>
+        <form id="auth-form" class="auth-form">
+          <label class="auth-name hidden">FULL NAME<input name="full_name" autocomplete="name" /></label>
+          <label>EMAIL ADDRESS<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
+          <label>PASSWORD<input name="password" type="password" autocomplete="current-password" minlength="6" required /></label>
+          <p id="auth-message" class="message" role="status"></p>
+          <button id="auth-submit" class="primary-button" type="submit">Sign in</button>
+        </form>
+        <div class="auth-divider"><span></span><small>or</small><span></span></div>
+        <button type="button" id="google-login" class="google-login"><b>G</b> Continue with NEU Google</button>
+        <button class="auth-toggle" id="auth-toggle">Create an account</button>
+      </div>
+    </dialog>
+    <div id="toast" class="toast" role="status"></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

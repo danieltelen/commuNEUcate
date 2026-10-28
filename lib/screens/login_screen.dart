@@ -3,6 +3,7 @@ import '../utils/toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'main_layout.dart';
 import 'admin_layout.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,9 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
     Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final session = data.session;
       if (session != null && mounted) {
-        final email = session.user.email ?? '';
-        
-        
         try {
           String? avatarUrl = session.user.userMetadata?['avatar_url'] ?? session.user.userMetadata?['picture'];
           if (avatarUrl != null && avatarUrl.contains('googleusercontent.com') && avatarUrl.contains('=')) {
@@ -51,24 +49,37 @@ class _LoginScreenState extends State<LoginScreen> {
         try {
           final profile = await Supabase.instance.client
               .from('profiles')
-              .select('role')
+              .select('role, account_status')
               .eq('id', session.user.id)
               .maybeSingle();
 
           if (mounted) {
-            showTopToast(context, 'Welcome back!');
             final role = profile?['role'] ?? 'user';
-            
-            if (role == 'admin' || email == 'admin@admin.com') {
+            final accountStatus = profile?['account_status'] ?? 'pending';
+            if (role != 'admin' && accountStatus != 'approved') {
+              await Supabase.instance.client.auth.signOut();
+              if (mounted) {
+                final message = accountStatus == 'denied'
+                    ? 'Your account was not approved. Contact an administrator.'
+                    : 'Your account is waiting for administrator approval.';
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+              }
+              return;
+            }
+
+            showTopToast(context, 'Welcome back!');
+            if (role == 'admin') {
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminLayout()));
             } else {
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainLayout()));
             }
           }
         } catch (e) {
-          // Fallback if profile fetch fails
+          await Supabase.instance.client.auth.signOut();
           if (mounted) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainLayout()));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not verify your account. Please try again.')),
+            );
           }
         }
       }
@@ -95,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _doLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    
+
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter both email and password')));
       return;
@@ -108,34 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
     } on AuthException catch (e) {
-      // If user doesn't exist, try to sign them up automatically (useful for testing)
-      if (e.message.contains('Invalid login credentials')) {
-        if (email.toLowerCase() == 'admin@admin.com') {
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid login credentials')));
-          if (mounted) setState(() => _isLoading = false);
-          return;
-        }
-        
-        try {
-          final res = await Supabase.instance.client.auth.signUp(
-            email: email,
-            password: password,
-          );
-          
-          if (res.session == null) {
-            // Supabase returns a null session if the email is already registered 
-            // but the password was wrong (when auto-confirm is off or it obfuscates users).
-            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid login credentials')));
-          } else {
-            // Sign up successful! They are logged in automatically since Confirm Email is OFF.
-            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login successful!')));
-          }
-        } catch (signUpError) {
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: ${e.message}')));
-        }
-      } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
@@ -249,6 +233,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: _isLoading 
                         ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : const Text('Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                  const SizedBox(height: 14),
+                  TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen())),
+                    child: const Text('New here? Create an account with email'),
                   ),
                   const SizedBox(height: 24),
                   const Row(

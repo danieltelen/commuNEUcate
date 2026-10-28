@@ -23,6 +23,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
   bool _hasClaimed = false;
   bool _isLoadingClaimStatus = true;
   String? _adminId;
+  String _expectedAnswer = 'N/A';
 
   @override
   void initState() {
@@ -32,6 +33,17 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
 
   Future<void> _checkClaimStatus() async {
     try {
+      if (widget.isAdmin) {
+        final secret = await Supabase.instance.client
+            .from('report_secrets')
+            .select('expected_answer')
+            .eq('report_id', widget.item['id'])
+            .maybeSingle();
+        if (mounted && secret != null) {
+          setState(() => _expectedAnswer = secret['expected_answer']?.toString() ?? 'N/A');
+        }
+      }
+
       final adminRes = await Supabase.instance.client
           .from('profiles')
           .select('id')
@@ -310,7 +322,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  widget.item['expected_answer'] ?? 'N/A',
+                  _expectedAnswer,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ]),

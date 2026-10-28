@@ -236,12 +236,21 @@ class _ReportScreenState extends State<ReportScreen> {
             'description': _descController.text,
             'tags': _tagsController.text,
             'security_question': _securityQController.text,
-            'expected_answer': _securityAController.text,
             'image_url': imageUrl,
             'status': 'pending_review',
           })
           .select()
           .single();
+
+      try {
+        await Supabase.instance.client.from('report_secrets').insert({
+          'report_id': response['id'],
+          'expected_answer': _securityAController.text.trim(),
+        });
+      } catch (_) {
+        await Supabase.instance.client.from('reports').delete().eq('id', response['id']);
+        rethrow;
+      }
 
       final reportIdRaw = response['id']
           .toString()

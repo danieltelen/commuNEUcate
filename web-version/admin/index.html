@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07070e" />
+    <title>CommNEUcate Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="/admin/admin.css" />
+  </head>
+  <body class="admin-body">
+    <main id="admin-login" class="admin-login">
+      <a class="admin-brand" href="/"><span class="rail-logo">C</span> CommNEUcate <span class="admin-tag">ADMIN</span></a>
+      <section class="admin-login-card surface-card">
+        <span class="admin-kicker">SECURE ADMIN PORTAL</span>
+        <h1>Sign in</h1>
+        <p>Administrator access is checked against the shared CommNEUcate profiles.</p>
+        <form id="admin-login-form">
+          <label>ADMIN EMAIL<input name="email" type="email" required autocomplete="username" placeholder="admin@neu.edu.ph" /></label>
+          <label>PASSWORD<input name="password" type="password" required autocomplete="current-password" /></label>
+          <p id="admin-login-message" class="admin-message" role="status"></p>
+          <button class="admin-primary" type="submit">Sign in to Admin</button>
+        </form>
+        <a href="#" id="forgot-password" class="back-user">Forgot password?</a>
+        <a href="/" class="back-user">← Return to user web</a>
+      </section>
+    </main>
+
+    <dialog id="password-reset-dialog" class="admin-dialog">
+      <form id="password-reset-form">
+        <h2>Set a new password</h2>
+        <p>Choose a new password for your admin account.</p>
+        <label>NEW PASSWORD<input name="password" type="password" minlength="10" required autocomplete="new-password" /></label>
+        <p id="password-reset-message" class="admin-message" role="status"></p>
+        <div class="dialog-actions"><button class="admin-primary" type="submit">Save new password</button></div>
+      </form>
+    </dialog>
+
+    <div id="admin-app" class="admin-app hidden">
+      <aside class="admin-sidebar">
+        <a class="admin-brand" href="/"><span class="rail-logo">C</span><span>CommNEUcate<small>Admin Portal</small></span></a>
+        <nav><button class="admin-nav active" data-view="dashboard"><span>▦</span>Dashboard</button><button class="admin-nav" data-view="reports"><span>✓</span>Approvals</button><button class="admin-nav" data-view="users"><span>♙</span>Manage users</button></nav>
+        <div class="admin-sidebar-footer"><span id="admin-email"></span><button id="admin-logout">Sign out</button></div>
+      </aside>
+      <section class="admin-content-wrap">
+        <header class="admin-topbar"><button class="admin-brand compact" data-view="dashboard"><span class="rail-logo">C</span> CommNEUcate</button><span id="admin-page-title">Dashboard</span><button id="admin-refresh" class="admin-refresh">↻ Refresh</button></header>
+        <main id="admin-content" class="admin-content"></main>
+      </section>
+      <nav class="admin-mobile-nav"><button class="active" data-view="dashboard">▦<small>Dashboard</small></button><button data-view="reports">✓<small>Approvals</small></button><button data-view="users">♙<small>Users</small></button></nav>
+    </div>
+
+    <dialog id="reject-dialog" class="admin-dialog">
+      <form id="reject-form"><h2>Return report for correction</h2><p>Give the reporter a clear reason so they can update and resubmit it.</p><label>REVIEW NOTE<textarea name="review_note" rows="4" required maxlength="800" placeholder="What needs to be corrected?"></textarea></label><div class="dialog-actions"><button type="button" class="admin-secondary" id="cancel-reject">Cancel</button><button type="submit" class="admin-danger">Reject report</button></div></form>
+    </dialog>
+    <div id="admin-toast" class="toast" role="status"></div>
+    <script type="module" src="/admin/admin.js"></script>
+  </body>
+</html>

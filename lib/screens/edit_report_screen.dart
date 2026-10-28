@@ -22,15 +22,15 @@ class _EditReportScreenState extends State<EditReportScreen> {
   late TextEditingController _expectedAnswerController;
   String? _selectedCategory;
   bool _isLoading = false;
+  bool _isLoadingSecret = true;
   File? _image;
   final ImagePicker _picker = ImagePicker();
 
   final List<String> _categories = [
     'Electronics',
-    'Wallets & IDs',
-    'Bags & Luggage',
-    'Keys',
-    'Clothing & Accessories',
+    'Accessories',
+    'Documents',
+    'Clothing',
     'Others',
   ];
 
@@ -42,8 +42,26 @@ class _EditReportScreenState extends State<EditReportScreen> {
     _descController = TextEditingController(text: widget.item['description']);
     _tagsController = TextEditingController(text: widget.item['tags']);
     _securityQuestionController = TextEditingController(text: widget.item['security_question']);
-    _expectedAnswerController = TextEditingController(text: widget.item['expected_answer']);
+    _expectedAnswerController = TextEditingController();
     _selectedCategory = widget.item['category'];
+    _loadExpectedAnswer();
+  }
+
+  Future<void> _loadExpectedAnswer() async {
+    try {
+      final secret = await Supabase.instance.client
+          .from('report_secrets')
+          .select('expected_answer')
+          .eq('report_id', widget.item['id'])
+          .maybeSingle();
+      if (mounted && secret != null) {
+        _expectedAnswerController.text = secret['expected_answer']?.toString() ?? '';
+      }
+    } catch (_) {
+      // Keep the field editable if the existing report has no secret row.
+    } finally {
+      if (mounted) setState(() => _isLoadingSecret = false);
+    }
   }
 
   @override
@@ -87,24 +105,38 @@ class _EditReportScreenState extends State<EditReportScreen> {
         }
       }
 
+      final isRevalidation = widget.item['status'] == 'rejected';
       final Map<String, dynamic> updateData = {
         'item_name': _nameController.text.trim(),
         'location_found': _locationController.text.trim(),
         'description': _descController.text.trim(),
         'tags': _tagsController.text.trim(),
         'security_question': _securityQuestionController.text.trim(),
-        'expected_answer': _expectedAnswerController.text.trim(),
         'category': _selectedCategory,
       };
+
+      if (isRevalidation) {
+        updateData.addAll({
+          'status': 'pending_review',
+          'revalidation_count': ((widget.item['revalidation_count'] as num?)?.toInt() ?? 0) + 1,
+          'review_note': null,
+          'reviewed_at': null,
+          'reviewed_by': null,
+        });
+      }
 
       if (newImageUrl != null) {
         updateData['image_url'] = newImageUrl;
       }
 
+      await Supabase.instance.client.from('report_secrets').upsert({
+        'report_id': widget.item['id'],
+        'expected_answer': _expectedAnswerController.text.trim(),
+      });
       await Supabase.instance.client.from('reports').update(updateData).eq('id', widget.item['id']);
 
       if (mounted) {
-        showTopToast(context, 'Edit Successfully!');
+        showTopToast(context, isRevalidation ? 'Report resubmitted for review.' : 'Edit successfully!');
         Navigator.pop(context, true); // Return true to indicate success
       }
     } catch (e) {
@@ -136,7 +168,7 @@ class _EditReportScreenState extends State<EditReportScreen> {
             ),
           ),
         ),
-        title: const Text('Edit Report', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(widget.item['status'] == 'rejected' ? 'Update & Resubmit' : 'Edit Report', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -246,14 +278,14 @@ class _EditReportScreenState extends State<EditReportScreen> {
                 backgroundColor: const Color(0xFF0FE0B0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: _isLoading 
+              child: _isLoading || _isLoadingSecret
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Color(0xFF07070E), strokeWidth: 2))
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Save Changes', style: TextStyle(color: Color(0xFF07070E), fontSize: 16, fontWeight: FontWeight.bold)),
-                        SizedBox(width: 8),
-                        Icon(Icons.save, color: Color(0xFF07070E), size: 20),
+                        Text(widget.item['status'] == 'rejected' ? 'Resubmit for Review' : 'Save Changes', style: const TextStyle(color: Color(0xFF07070E), fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.save, color: Color(0xFF07070E), size: 20),
                       ],
                     ),
             ),

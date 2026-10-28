@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'main_layout.dart';
+import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,11 +18,17 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _doSignup() async {
     if (_nameController.text.isNotEmpty && _emailController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
+      final email = _emailController.text.trim().toLowerCase();
+      if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid email address.')));
+        return;
+      }
       setState(() => _isLoading = true);
       try {
         final AuthResponse res = await Supabase.instance.client.auth.signUp(
-          email: _emailController.text,
+          email: email,
           password: _passwordController.text,
+          emailRedirectTo: 'io.supabase.qras://login-callback/',
           data: {'full_name': _nameController.text},
         );
         
@@ -40,11 +46,15 @@ class _SignupScreenState extends State<SignupScreen> {
           }
         }
         
+        if (res.session != null) {
+          await Supabase.instance.client.auth.signOut();
+        }
+
         if (mounted) {
-          showTopToast(context, 'Successfully signed up!');
+          showTopToast(context, 'Account created. Verify your email and wait for admin approval.');
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const MainLayout()),
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
             (route) => false,
           );
         }
@@ -117,7 +127,7 @@ class _SignupScreenState extends State<SignupScreen> {
               controller: _passwordController,
               obscureText: true,
               decoration: InputDecoration(
-                hintText: 'Min. 8 characters',
+                hintText: 'Min. 10 characters',
                 prefixIcon: const Icon(Icons.lock_outline),
                 filled: true,
                 fillColor: const Color(0xFF111120),

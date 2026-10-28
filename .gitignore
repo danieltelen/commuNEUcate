@@ -1,4 +1,6 @@
 # Miscellaneous
+*.apk
+.kilo/
 *.class
 *.log
 *.pyc
