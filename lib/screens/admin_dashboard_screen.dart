@@ -78,19 +78,17 @@ appBar: AppBar(title: const Text('Admin Dashboard'), automaticallyImplyLeading: 
         children: [
           const Text('Welcome, Admin', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
-          Row(
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
             children: [
-              Expanded(child: _buildAdminStatCard('Pending Approvals', '$_pendingCount', const Color(0xFF0FE0B0))),
-              const SizedBox(width: 16),
-              Expanded(child: _buildAdminStatCard('Flagged Disputes', '$_disputesCount', Colors.redAccent)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _buildAdminStatCard('Active Users', '$_activeUsers', const Color(0xFF7C6AFF))),
-              const SizedBox(width: 16),
-              Expanded(child: _buildAdminStatCard('Items Claimed', '$_itemsClaimed', Colors.white)),
+              _buildAdminStatCard('Pending Approvals', '$_pendingCount', const Color(0xFF0FE0B0)),
+              _buildAdminStatCard('Flagged Disputes', '$_disputesCount', Colors.redAccent),
+              _buildAdminStatCard('Active Users', '$_activeUsers', const Color(0xFF7C6AFF)),
+              _buildAdminStatCard('Items Claimed', '$_itemsClaimed', Colors.white),
             ],
           ),
           const SizedBox(height: 16),
