@@ -9,7 +9,35 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../styles.css" />
-    <link rel="stylesheet" href="/admin/admin.css" />
+    <link rel="stylesheet" href="/admin/admin.css?v=3" />
+    <style>
+      .admin-report-card {
+        padding: 16px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        gap: 16px !important;
+      }
+      .admin-report-card img,
+      .admin-report-thumb,
+      .admin-report-placeholder {
+        width: 90px !important;
+        min-width: 90px !important;
+        max-width: 90px !important;
+        height: 90px !important;
+        min-height: 90px !important;
+        max-height: 90px !important;
+        border-radius: 12px !important;
+        object-fit: cover !important;
+        background: #090911 !important;
+        flex-shrink: 0 !important;
+        display: block !important;
+      }
+      .admin-report-info {
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+    </style>
   </head>
   <body class="admin-body">
     <main id="admin-login" class="admin-login">
@@ -56,6 +84,6 @@
       <form id="reject-form"><h2>Return report for correction</h2><p>Give the reporter a clear reason so they can update and resubmit it.</p><label>REVIEW NOTE<textarea name="review_note" rows="4" required maxlength="800" placeholder="What needs to be corrected?"></textarea></label><div class="dialog-actions"><button type="button" class="admin-secondary" id="cancel-reject">Cancel</button><button type="submit" class="admin-danger">Reject report</button></div></form>
     </dialog>
     <div id="admin-toast" class="toast" role="status"></div>
-    <script type="module" src="/admin/admin.js"></script>
+    <script type="module" src="/admin/admin.js?v=3"></script>
   </body>
 </html>
