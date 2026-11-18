@@ -282,13 +282,15 @@ appBar: AppBar(
                           ),
                           ListTile(
                             contentPadding: const EdgeInsets.all(12),
-                            leading: Container(
-                              width: 60, height: 60,
-                              decoration: BoxDecoration(color: const Color(0xFF07070E), borderRadius: BorderRadius.circular(12)),
-                              clipBehavior: Clip.hardEdge,
-                              child: item['image_url'] != null
-                                  ? Image.network(item['image_url'], fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.image, color: Colors.grey))
-                                  : const Icon(Icons.image, color: Colors.grey),
+                            leading: SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: item['image_url'] != null
+                                    ? Image.network(item['image_url'], fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.grey))
+                                    : const Icon(Icons.image, color: Colors.grey),
+                              ),
                             ),
                             title: Text(item['item_name'] ?? 'Unknown Item', style: const TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Column(
